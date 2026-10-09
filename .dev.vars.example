@@ -1,0 +1,21 @@
+# Local development secrets (copy to .dev.vars). Never commit .dev.vars.
+
+# Overrides the "production" default in wrangler.jsonc for local dev
+ENVIRONMENT=development
+
+# AI Gateway for local dev. Production/staging use cf-ai-spa-production / cf-ai-spa-staging
+# (set in wrangler.jsonc vars — create those gateways in the dashboard: AI → AI Gateway).
+AI_GATEWAY_ID=default
+
+# Better Auth — generate a secret with: openssl rand -base64 32
+BETTER_AUTH_SECRET=replace-with-a-random-32-byte-secret
+# The origin the browser uses. In dev that's the Vite server, which proxies /api to wrangler.
+BETTER_AUTH_URL=http://localhost:5173
+
+# Optional social providers — a provider is enabled only when both values are set.
+# GitHub callback URL: http://localhost:5173/api/auth/callback/github
+# GITHUB_CLIENT_ID=
+# GITHUB_CLIENT_SECRET=
+# Google callback URL: http://localhost:5173/api/auth/callback/google
+# GOOGLE_CLIENT_ID=
+# GOOGLE_CLIENT_SECRET=

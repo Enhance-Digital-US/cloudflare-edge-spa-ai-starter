@@ -1,0 +1,235 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Top level = production. `wrangler deploy` deploys the `cf-ai-spa` Worker.
+  // `wrangler deploy --env staging` deploys a separate `cf-ai-spa-staging` Worker.
+  "name": "cf-ai-spa",
+  "compatibility_date": "2026-09-27",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "apps/api/src/index.ts",
+  "assets": {
+    "directory": "apps/web/dist",
+    "not_found_handling": "single-page-application",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  // Secrets (not in this file): BETTER_AUTH_SECRET, BETTER_AUTH_URL, and optionally
+  // GITHUB_CLIENT_ID/SECRET, GOOGLE_CLIENT_ID/SECRET — set per environment with
+  // `wrangler secret put <NAME> [--env staging]`, and in .dev.vars locally.
+  // Overridden locally by .dev.vars (ENVIRONMENT=development)
+  "vars": {
+    "ENVIRONMENT": "production",
+    // Create in dashboard: AI → AI Gateway. Configure spend limits / rate limits there.
+    "AI_GATEWAY_ID": "cf-ai-spa-production",
+    // Empty = open sign-up. Comma-separated domains to restrict, e.g. "example.com".
+    "AUTH_ALLOWED_EMAIL_DOMAINS": "",
+    // Empty = email verification & password reset disabled. Domain must be onboarded:
+    // `wrangler email sending enable <domain>`
+    "EMAIL_FROM": ""
+  },
+  "observability": {
+    "enabled": true,
+    "logs": { "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.1 },
+    "issues": { "enabled": true }
+  },
+  // Rate limiters — namespace_id is any account-unique integer string, distinct per env.
+  "ratelimits": [
+    // Per client IP on /api/auth/sign-* and password reset
+    {
+      "name": "AUTH_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 10, "period": 60 }
+    },
+    // Per user on /api/ai/*
+    { "name": "AI_RATE_LIMITER", "namespace_id": "1002", "simple": { "limit": 20, "period": 60 } }
+  ],
+  // Email Service — verification & password-reset emails (sent only when EMAIL_FROM is set)
+  "send_email": [{ "name": "EMAIL" }],
+  // AI binding — Workers AI + AI Gateway
+  "ai": {
+    "binding": "AI"
+  },
+  // D1 database — create via: wrangler d1 create cf-ai-spa-db
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "cf-ai-spa-db",
+      "database_id": "YOUR_D1_DATABASE_ID",
+      "migrations_dir": "apps/api/migrations"
+    }
+  ],
+  // KV namespace — create via: wrangler kv namespace create KV
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "YOUR_KV_NAMESPACE_ID"
+    }
+  ],
+  // R2 bucket — create via: wrangler r2 bucket create cf-ai-spa-bucket
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "cf-ai-spa-bucket"
+    }
+  ],
+  // Durable Objects: Conversation (chat history, SQLite) and CodeSandbox (owns a container)
+  "durable_objects": {
+    "bindings": [
+      { "name": "CONVERSATION", "class_name": "Conversation" },
+      { "name": "SANDBOX", "class_name": "CodeSandbox" }
+    ]
+  },
+  // Class lifecycle changes (new/renamed/deleted classes) require `wrangler deploy`,
+  // not `wrangler versions upload`. Never edit an applied migration; append a new tag.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Conversation", "CodeSandbox"] }],
+  // Durable Object-managed container (public beta). The DO picks image + size at start();
+  // it uses the Cloudflare-managed `cloudflare/debian-trixie` image, so no Dockerfile.
+  // Requires the Workers Paid plan. `name` must be unique in the account.
+  "containers": [
+    {
+      "class_name": "CodeSandbox",
+      "name": "cf-ai-spa-sandbox",
+      "scheduling_policy": "durable_object"
+    }
+  ],
+  // Workflow names are account-global, so staging uses a different name.
+  "workflows": [
+    { "binding": "AGENT_TASK", "name": "cf-ai-spa-agent-task", "class_name": "AgentTaskWorkflow" }
+  ],
+  "env": {
+    // Bindings and vars are non-inheritable: every one must be redeclared here,
+    // otherwise the staging Worker silently deploys without it.
+    "staging": {
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "AI_GATEWAY_ID": "cf-ai-spa-staging",
+        "AUTH_ALLOWED_EMAIL_DOMAINS": "",
+        "EMAIL_FROM": ""
+      },
+      // Full trace sampling in staging; logs/issues as production
+      "observability": {
+        "enabled": true,
+        "logs": { "head_sampling_rate": 1 },
+        "traces": { "enabled": true, "head_sampling_rate": 1 },
+        "issues": { "enabled": true }
+      },
+      "ratelimits": [
+        {
+          "name": "AUTH_RATE_LIMITER",
+          "namespace_id": "2001",
+          "simple": { "limit": 10, "period": 60 }
+        },
+        {
+          "name": "AI_RATE_LIMITER",
+          "namespace_id": "2002",
+          "simple": { "limit": 20, "period": 60 }
+        }
+      ],
+      "send_email": [{ "name": "EMAIL" }],
+      "ai": {
+        "binding": "AI"
+      },
+      // Create via: wrangler d1 create cf-ai-spa-db-staging
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "cf-ai-spa-db-staging",
+          "database_id": "YOUR_STAGING_D1_DATABASE_ID",
+          "migrations_dir": "apps/api/migrations"
+        }
+      ],
+      // Create via: wrangler kv namespace create KV --env staging
+      "kv_namespaces": [
+        {
+          "binding": "KV",
+          "id": "YOUR_STAGING_KV_NAMESPACE_ID"
+        }
+      ],
+      // Create via: wrangler r2 bucket create cf-ai-spa-bucket-staging
+      "r2_buckets": [
+        {
+          "binding": "BUCKET",
+          "bucket_name": "cf-ai-spa-bucket-staging"
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "CONVERSATION", "class_name": "Conversation" },
+          { "name": "SANDBOX", "class_name": "CodeSandbox" }
+        ]
+      },
+      "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Conversation", "CodeSandbox"] }],
+      "containers": [
+        {
+          "class_name": "CodeSandbox",
+          "name": "cf-ai-spa-staging-sandbox",
+          "scheduling_policy": "durable_object"
+        }
+      ],
+      "workflows": [
+        {
+          "binding": "AGENT_TASK",
+          "name": "cf-ai-spa-staging-agent-task",
+          "class_name": "AgentTaskWorkflow"
+        }
+      ],
+      // PR previews (`wrangler preview --env staging`). Each preview gets its own DO
+      // namespaces automatically, but bindings read from `env` must be declared here or
+      // the preview fails with error 1101. DO-managed containers can't be declared under
+      // `previews` (wrangler rejects it); the sandbox comes from the env-level entry. Workflows are NOT created per
+      // preview: AGENT_TASK binds to the existing staging Workflow (staging's code).
+      "previews": {
+        // Previews inherit NOTHING from the environment above. Every var/binding the code
+        // reads must be repeated here (pointed at staging resources), or requests 1101.
+        // Secrets: `wrangler preview base-config secret put BETTER_AUTH_SECRET --env staging`
+        // (and BETTER_AUTH_URL = the staging URL, used as the fallback base URL).
+        "vars": {
+          "ENVIRONMENT": "staging",
+          "AI_GATEWAY_ID": "cf-ai-spa-staging",
+          "AUTH_ALLOWED_EMAIL_DOMAINS": "",
+          "EMAIL_FROM": "",
+          // Preview URLs are <preview>-<worker>.<subdomain>.workers.dev; replace YOUR_SUBDOMAIN.
+          "BETTER_AUTH_ALLOWED_HOSTS": "*-cf-ai-spa-staging.YOUR_SUBDOMAIN.workers.dev"
+        },
+        "ai": { "binding": "AI" },
+        // Shares the staging database (apply migrations to staging before previews).
+        "d1_databases": [
+          {
+            "binding": "DB",
+            "database_name": "cf-ai-spa-db-staging",
+            "database_id": "YOUR_STAGING_D1_DATABASE_ID",
+            "migrations_dir": "apps/api/migrations"
+          }
+        ],
+        "kv_namespaces": [{ "binding": "KV", "id": "YOUR_STAGING_KV_NAMESPACE_ID" }],
+        "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "cf-ai-spa-bucket-staging" }],
+        "ratelimits": [
+          {
+            "name": "AUTH_RATE_LIMITER",
+            "namespace_id": "3001",
+            "simple": { "limit": 10, "period": 60 }
+          },
+          {
+            "name": "AI_RATE_LIMITER",
+            "namespace_id": "3002",
+            "simple": { "limit": 20, "period": 60 }
+          }
+        ],
+        "send_email": [{ "name": "EMAIL" }],
+        "durable_objects": {
+          "bindings": [
+            { "name": "CONVERSATION", "class_name": "Conversation" },
+            { "name": "SANDBOX", "class_name": "CodeSandbox" }
+          ]
+        },
+        "workflows": [
+          {
+            "binding": "AGENT_TASK",
+            "name": "cf-ai-spa-staging-agent-task",
+            "class_name": "AgentTaskWorkflow"
+          }
+        ]
+      }
+    }
+  }
+}
