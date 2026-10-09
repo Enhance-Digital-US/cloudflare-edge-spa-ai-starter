@@ -1,0 +1,12 @@
+{
+  "name": "@cf-ai-spa/tsconfig",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./base": "./tsconfig.base.json",
+    "./web": "./tsconfig.web.json",
+    "./worker": "./tsconfig.worker.json",
+    "./shared": "./tsconfig.shared.json"
+  }
+}
