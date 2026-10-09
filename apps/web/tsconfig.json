@@ -1,0 +1,17 @@
+{
+  "extends": "@cf-ai-spa/tsconfig/web",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": ["vite/client"],
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["src"],
+  "references": [
+    {
+      "path": "../api"
+    }
+  ]
+}

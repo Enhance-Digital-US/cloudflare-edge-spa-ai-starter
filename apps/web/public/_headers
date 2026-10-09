@@ -1,0 +1,19 @@
+# Applied by Workers static assets to SPA responses. /api/* responses come from the
+# Worker and get their headers from Hono's secureHeaders() instead (apps/api/src/index.ts).
+#
+# CSP notes:
+# - style-src 'unsafe-inline': KaTeX and Shiki emit inline styles.
+# - script-src 'wasm-unsafe-eval': Shiki's Oniguruma engine compiles WebAssembly (not JS eval).
+# - img-src has no remote origins: model output is rendered as Markdown, and a
+#   prompt-injected image URL could otherwise exfiltrate data in its query string.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Cross-Origin-Opener-Policy: same-origin
+
+# Vite fingerprints everything under /assets/, so it can be cached forever.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
