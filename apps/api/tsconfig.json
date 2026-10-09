@@ -1,0 +1,12 @@
+{
+  "extends": "@cf-ai-spa/tsconfig/worker",
+  "compilerOptions": {
+    "outDir": "dist/types",
+    "rootDir": "src",
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "declarationMap": false
+  },
+  "include": ["src", "worker-configuration.d.ts"],
+  "exclude": ["src/**/__tests__"]
+}
