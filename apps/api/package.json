@@ -11,15 +11,15 @@
     "@cf-ai-spa/shared": "workspace:*",
     "@cloudflare/tanstack-ai": "^0.2.1",
     "@hono/zod-validator": "^0.9.1",
-    "@tanstack/ai": "^0.65.1",
-    "better-auth": "1.7.7",
+    "@tanstack/ai": "^0.69.0",
+    "better-auth": "1.7.10",
     "hono": "^4.13.13",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@cf-ai-spa/tsconfig": "workspace:*",
-    "@cloudflare/vitest-plugin": "~1.3.7",
-    "@cloudflare/workers-types": "^5.20261008.1",
+    "@cloudflare/vitest-plugin": "~1.4.3",
+    "@cloudflare/workers-types": "^5.20261015.1",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11"
   },
