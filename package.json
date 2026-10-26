@@ -22,11 +22,11 @@
     "preview": "pnpm run build && wrangler dev --enable-containers=false"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.15",
-    "concurrently": "^10.0.5",
-    "lefthook": "^2.2.0",
+    "@biomejs/biome": "^2.6.2",
+    "concurrently": "^10.0.6",
+    "lefthook": "^2.2.2",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11",
-    "wrangler": "^4.148.0"
+    "wrangler": "^4.152.0"
   }
 }
